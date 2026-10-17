@@ -122,3 +122,62 @@
   .transactions .panel-head{gap:8px}
   .transaction-add-btn{height:36px;padding:0 8px;font-size:10px}
 }
+main.auth-screen{box-sizing:border-box;width:100%;max-width:none;min-height:100vh;margin:0;padding:24px;display:grid;place-items:center}
+@media(max-width:720px){
+  main.auth-screen{min-height:100vh;min-height:100dvh;padding:24px 18px}
+  .auth-card{width:100%;max-width:560px;padding:40px 34px;border-radius:20px}
+  .auth-card .brand{font-size:24px;padding-bottom:34px}
+  .auth-card .brand-mark{width:36px;height:36px;font-size:27px;border-radius:11px}
+  .auth-card h1{font-size:30px}
+  .auth-card>p{font-size:16px;line-height:1.65;margin:12px 0 24px}
+  .auth-card form label{font-size:15px;margin:20px 0}
+  .auth-card form input{height:54px;margin-top:8px;padding:0 14px;font-size:16px;border-radius:9px}
+  .auth-card .submit{height:54px;margin-top:24px;font-size:16px;border-radius:10px}
+  .auth-switch{margin-top:22px;font-size:14px;line-height:1.5}
+}
+@media(max-width:380px){
+  main.auth-screen{padding:18px 14px}
+  .auth-card{padding:34px 26px}
+}
+@media(max-width:720px){
+  body{font-size:16px}
+  .eyebrow,.header-leading .eyebrow{font-size:11px;letter-spacing:1.2px}
+  .header-leading h1{font-size:clamp(21px,5.8vw,25px)}
+  .panel h3{font-size:18px}
+  .panel p{font-size:13px;line-height:1.45}
+  .panel-head{gap:10px}
+  .month-picker{font-size:12px}
+  .month-picker input{font-size:14px;min-height:38px}
+  .chart-y,.days{font-size:12px}
+  .chart-foot{font-size:13px}
+  .chart-foot b{font-size:14px}
+  .stat p{font-size:12px}
+  .stat b{font-size:14px}
+  .search{height:44px}
+  .search input{font-size:14px}
+  .tx-name b{font-size:14px}
+  .tx-name small,.tx-date{font-size:12px}
+  .tx strong{font-size:14px}
+  .tx-icon{font-size:17px}
+  .tx-actions button{width:40px;height:40px}
+  .empty{font-size:14px;line-height:1.5;text-align:center;padding:12px 8px}
+  .category{font-size:14px}
+  .category b{font-size:14px}
+  .view-cats,.budget-btn{height:42px;font-size:13px}
+  .nav-dropdown-panel button{font-size:15px;min-height:46px}
+  .mobile-nav button{font-size:11px}
+  .transaction-add-btn{font-size:12px}
+  .report-top h2{font-size:22px}
+  .report-top p{font-size:13px;line-height:1.45}
+  .report-cards span{font-size:12px}
+  .report-cards b{font-size:18px}
+  .report-row{font-size:13px}
+  .report-row b{font-size:12px}
+}
+@media(max-width:380px){
+  .header-leading h1{font-size:20px}
+  .tx-name b{font-size:13px}
+  .tx strong{font-size:13px}
+  .tx-actions button{width:36px;height:38px}
+  .report-row{font-size:12px}
+}
