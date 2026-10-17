@@ -210,3 +210,4 @@ main.auth-screen{box-sizing:border-box;width:100%;max-width:none;min-height:100v
   .tx-day-group .tx{grid-template-columns:28px minmax(0,1fr) auto 68px;gap:4px}
   .transactions-only .tx-day-group .tx{grid-template-columns:28px minmax(0,1fr) auto 68px}
 }
+.modal{max-height:calc(100dvh - 32px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
