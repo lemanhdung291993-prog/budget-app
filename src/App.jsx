@@ -8,7 +8,15 @@ import { TransactionModal } from './components/TransactionModal';
 import { DashboardView } from './views/DashboardView';
 import { Reports } from './views/Reports';
 import { supabase, supabaseConfigured } from './lib/supabase';
-import { deleteTransactionRecord, loadBudget, saveNames, saveTransactionRecord } from './services/budgetData';
+import {
+  deleteMonthlyBudget,
+  deleteTransactionRecord,
+  loadBudget,
+  loadMonthlyBudget,
+  saveMonthlyBudget,
+  saveNames,
+  saveTransactionRecord,
+} from './services/budgetData';
 
 const createForm = (month, categories, accounts) => ({
   title: '',
@@ -33,6 +41,9 @@ export default function App() {
   const [reloadKey, setReloadKey] = useState(0);
   const [error, setError] = useState('');
   const [transactions, setTransactions] = useState([]);
+  const [monthlyBudget, setMonthlyBudget] = useState(null);
+  const [budgetLoading, setBudgetLoading] = useState(false);
+  const [budgetError, setBudgetError] = useState('');
   const [modal, setModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [manage, setManage] = useState(null);
@@ -85,6 +96,34 @@ export default function App() {
     };
   }, [user?.id, reloadKey]);
 
+  useEffect(() => {
+    if (!user) {
+      setMonthlyBudget(null);
+      return undefined;
+    }
+
+    let current = true;
+    setBudgetLoading(true);
+    setBudgetError('');
+    setMonthlyBudget(null);
+    loadMonthlyBudget(user.id, month)
+      .then(amount => {
+        if (current) setMonthlyBudget(amount);
+      })
+      .catch(loadError => {
+        if (current) {
+          setBudgetError(`Could not load this month's budget: ${loadError.message}. Run supabase/monthly_budget_repeat_migration.sql in the Supabase SQL Editor.`);
+        }
+      })
+      .finally(() => {
+        if (current) setBudgetLoading(false);
+      });
+
+    return () => {
+      current = false;
+    };
+  }, [user?.id, month]);
+
   const monthTransactions = useMemo(() => transactions.flatMap(transaction => {
     if (transaction.date.startsWith(month)) {
       return [{ ...transaction, occurrenceId: transaction.id }];
@@ -94,6 +133,7 @@ export default function App() {
         ...transaction,
         date: occurrenceDate(transaction.date, month),
         occurrenceId: transaction.id,
+        recurrenceStartDate: transaction.date,
         isRecurringOccurrence: true,
       }];
     }
@@ -135,7 +175,7 @@ export default function App() {
       account: form.account,
       note: form.note,
       date: form.date,
-      recurrence: form.type === 'expense' ? form.recurrence : 'none',
+      recurrence: form.recurrence,
       icon: form.type === 'income' ? '✦' : '●',
     };
     try {
@@ -167,7 +207,7 @@ export default function App() {
       account: transaction.account,
       note: transaction.note || '',
       type: transaction.amount > 0 ? 'income' : 'expense',
-      date: transaction.date,
+      date: transaction.recurrenceStartDate || transaction.date,
       recurrence: transaction.recurrence || 'none',
     });
     setModal(true);
@@ -175,7 +215,7 @@ export default function App() {
 
   const removeTransaction = async (id, recurring) => {
     const message = recurring
-      ? 'Delete this recurring expense and all future occurrences?'
+      ? 'Delete this recurring transaction and all future occurrences?'
       : 'Delete this transaction? This cannot be undone.';
     if (window.confirm(message)) {
       try {
@@ -194,6 +234,28 @@ export default function App() {
     await saveNames(table, previousItems, nextItems, user.id);
     (type === 'categories' ? setCategories : setAccounts)(nextItems);
     setError('');
+  };
+
+  const updateMonthlyBudget = async (amount, repeatMonthly) => {
+    try {
+      await saveMonthlyBudget(user.id, month, amount, repeatMonthly);
+      setMonthlyBudget({ amount, repeatMonthly, sourceMonth: month });
+      setBudgetError('');
+    } catch (saveError) {
+      setBudgetError(`Could not save this month's budget: ${saveError.message}. Run supabase/monthly_budget_repeat_migration.sql in the Supabase SQL Editor.`);
+      throw saveError;
+    }
+  };
+
+  const clearMonthlyBudget = async () => {
+    try {
+      await deleteMonthlyBudget(user.id, month);
+      const inheritedBudget = await loadMonthlyBudget(user.id, month);
+      setMonthlyBudget(inheritedBudget);
+      setBudgetError('');
+    } catch (deleteError) {
+      setBudgetError(`Could not remove this month's budget: ${deleteError.message}`);
+    }
   };
 
   const signOut = async () => {
@@ -247,6 +309,11 @@ export default function App() {
             transactionsOnly={active === 'Transactions'}
             expenses={expenses}
             income={income}
+            monthlyBudget={monthlyBudget}
+            budgetLoading={budgetLoading}
+            budgetError={budgetError}
+            onSaveMonthlyBudget={updateMonthlyBudget}
+            onClearMonthlyBudget={clearMonthlyBudget}
             month={month}
             monthLabel={monthLabel}
             onMonthChange={setMonth}
@@ -255,6 +322,7 @@ export default function App() {
             onSearchChange={setFilter}
             search={filter}
             transactions={shownTransactions}
+            categoryTransactions={monthTransactions}
             onManageCategories={() => setManage('categories')}
             onAddTransaction={startNewTransaction}
           />

@@ -181,3 +181,17 @@ main.auth-screen{box-sizing:border-box;width:100%;max-width:none;min-height:100v
   .tx-actions button{width:36px;height:38px}
   .report-row{font-size:12px}
 }
+.balance-info>p{margin:0;color:#b4afc7;font-size:13px}
+.budget-edit,.budget-clear{background:transparent;color:#6e5cec;font-size:12px;font-weight:600;padding:6px}
+.budget-edit:hover,.budget-clear:hover{text-decoration:underline}
+.budget-clear{width:100%;margin-top:6px;color:#8a91a2}
+.budget-editor{display:grid;gap:8px;margin-top:12px}
+.budget-editor label{font-size:12px;font-weight:600;color:#596174}
+.budget-editor input{width:100%;height:40px;border:1px solid #e1e4eb;border-radius:7px;padding:0 10px;outline-color:#7866f2}
+.budget-editor-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.budget-editor-actions button{height:38px;justify-content:center}
+.budget-editor-actions .budget-btn{width:100%}
+.budget-editor .budget-repeat-option{display:flex;align-items:center;gap:8px;cursor:pointer}
+.budget-editor .budget-repeat-option input{width:16px;height:16px;flex:0 0 16px;accent-color:#7564ef}
+.budget .manage-error{font-size:11px;line-height:1.4;margin:10px 0 0;overflow-wrap:anywhere}
+.budget button:disabled{opacity:.6;cursor:wait}

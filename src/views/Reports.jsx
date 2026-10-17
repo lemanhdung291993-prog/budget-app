@@ -5,7 +5,9 @@ export function Reports({ transactions, month, setMonth, monthLabel }) {
     t.amount < 0 && (t.date.startsWith(month) || (t.recurrence === 'monthly' && t.date.slice(0,7) < month))
   ).reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
-  const income = transactions.filter(t => t.amount > 0 && t.date.startsWith(month)).reduce((sum, t) => sum + t.amount, 0);
+  const income = transactions.filter(t =>
+    t.amount > 0 && (t.date.startsWith(month) || (t.recurrence === 'monthly' && t.date.slice(0, 7) < month))
+  ).reduce((sum, t) => sum + t.amount, 0);
 
   const categories = Object.entries(
     transactions.filter(t => 

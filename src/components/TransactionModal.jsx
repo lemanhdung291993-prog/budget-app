@@ -57,15 +57,15 @@ export function TransactionModal({
               </select>
               <button type="button" className="manage-link" onClick={() => onManage('categories')}>Manage categories</button>
             </label>
-            <label>
-              Repeat
-              <select value={form.recurrence} onChange={event => onFormChange({ ...form, recurrence: event.target.value })}>
-                <option value="none">Does not repeat</option>
-                <option value="monthly">Every month</option>
-              </select>
-            </label>
           </>
         )}
+        <label>
+          Repeat
+          <select value={form.recurrence} onChange={event => onFormChange({ ...form, recurrence: event.target.value })}>
+            <option value="none">Does not repeat</option>
+            <option value="monthly">Every month</option>
+          </select>
+        </label>
         <label>Note <span className="optional">optional</span><input value={form.note} onChange={event => onFormChange({ ...form, note: event.target.value })} placeholder="Add a note" /></label>
         <button className="submit">{editingId ? 'Save changes' : 'Save transaction'}</button>
       </form>

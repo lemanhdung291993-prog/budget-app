@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -8,7 +9,6 @@ import {
   Plus,
   Search,
   Trash2,
-  TrendingUp,
 } from 'lucide-react';
 import { Stat } from '../components/Stat';
 import { colors } from '../utils/constants';
@@ -17,6 +17,11 @@ export function DashboardView({
   transactionsOnly = false,
   expenses,
   income,
+  monthlyBudget,
+  budgetLoading,
+  budgetError,
+  onSaveMonthlyBudget,
+  onClearMonthlyBudget,
   month,
   monthLabel,
   onMonthChange,
@@ -25,21 +30,64 @@ export function DashboardView({
   onSearchChange,
   search,
   transactions,
+  categoryTransactions,
   onManageCategories,
   onAddTransaction,
 }) {
+  const categoryTotals = categoryTransactions
+    .filter(transaction => transaction.amount < 0)
+    .reduce((totals, transaction) => {
+      totals[transaction.category] = (totals[transaction.category] || 0) + Math.abs(transaction.amount);
+      return totals;
+    }, {});
+  const topCategories = Object.entries(categoryTotals)
+    .sort((first, second) => second[1] - first[1]);
+  const maxCategorySpend = topCategories[0]?.[1] || 1;
+  const [budgetDraft, setBudgetDraft] = useState('');
+  const [repeatBudgetMonthly, setRepeatBudgetMonthly] = useState(false);
+  const [editingBudget, setEditingBudget] = useState(false);
+  const [budgetFormError, setBudgetFormError] = useState('');
+
+  useEffect(() => {
+    setBudgetDraft(monthlyBudget == null ? '' : String(monthlyBudget.amount));
+    setRepeatBudgetMonthly(monthlyBudget?.repeatMonthly ?? false);
+    setEditingBudget(false);
+    setBudgetFormError('');
+  }, [month, monthlyBudget]);
+
+  const budgetAmount = monthlyBudget?.amount ?? null;
+  const budgetProgress = budgetAmount > 0
+    ? Math.min((expenses / budgetAmount) * 100, 100)
+    : 0;
+  const budgetRemaining = budgetAmount == null ? null : budgetAmount - expenses;
+
+  const submitBudget = async event => {
+    event.preventDefault();
+    const amount = Number(budgetDraft);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setBudgetFormError('Enter a monthly budget greater than zero.');
+      return;
+    }
+    setBudgetFormError('');
+    try {
+      await onSaveMonthlyBudget(amount, repeatBudgetMonthly);
+      setEditingBudget(false);
+    } catch {
+      // The parent displays the database error and keeps the editor open for retry.
+    }
+  };
+
   return (
     <>
       {!transactionsOnly && <section className="balance-card">
         <div className="balance-info">
-          <p>Total balance</p>
-          <h2>${(income - expenses + 5400).toLocaleString('en-US', { minimumFractionDigits: 2 })}</h2>
-          <span className="trend"><TrendingUp size={15} /> 12.4% <em>vs. last month</em></span>
+          <p>Net this month</p>
+          <h2>{(income - expenses).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</h2>
         </div>
         <div className="balance-stats">
           <Stat icon={<ArrowDownLeft />} label="Income" value={income} color="green" />
           <Stat icon={<ArrowUpRight />} label="Expenses" value={expenses} color="rose" />
-          <Stat icon={<Landmark />} label="Savings" value={income - expenses} color="purple" />
+          <Stat icon={<Landmark />} label="Net" value={income - expenses} color="purple" />
         </div>
       </section>}
 
@@ -74,12 +122,62 @@ export function DashboardView({
 
         <div className="panel budget">
           <div className="panel-head">
-            <div><h3>Monthly budget</h3><p>$1,847 spent of $2,800</p></div>
-            <button className="dots"><MoreHorizontal size={20} /></button>
+            <div>
+              <h3>Monthly budget</h3>
+              <p>{budgetAmount == null ? 'No spending limit set' : `${expenses.toLocaleString('en-US', { style: 'currency', currency: 'USD' })} spent of ${budgetAmount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}`}</p>
+            </div>
+            {budgetAmount != null && !editingBudget && (
+              <button className="budget-edit" onClick={() => setEditingBudget(true)}>Edit</button>
+            )}
           </div>
-          <div className="donut-wrap"><div className="donut"><div><b>66%</b><span>used</span></div></div></div>
-          <div className="budget-bottom"><span>Remaining</span><b>$952.65</b></div>
-          <button className="budget-btn">View budget details <ChevronRight size={16} /></button>
+          <div className="donut-wrap">
+            <div className="donut" style={{ background: budgetAmount == null ? '#eeeef7' : `conic-gradient(#7866f2 0 ${budgetProgress}%, #eeeef7 ${budgetProgress}% 100%)` }}>
+              <div><b>{budgetAmount == null ? '—' : `${Math.round((expenses / budgetAmount) * 100)}%`}</b><span>{budgetAmount == null ? 'not set' : 'used'}</span></div>
+            </div>
+          </div>
+          <div className="budget-bottom">
+            <span>{budgetRemaining != null && budgetRemaining < 0 ? 'Over budget' : 'Remaining'}</span>
+            <b>{budgetRemaining == null ? '—' : budgetRemaining.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</b>
+          </div>
+          {editingBudget ? (
+            <form className="budget-editor" onSubmit={submitBudget}>
+              <label htmlFor="monthly-budget-amount">Budget for {monthLabel}</label>
+              <input
+                id="monthly-budget-amount"
+                type="number"
+                min="0.01"
+                step="0.01"
+                required
+                value={budgetDraft}
+                onChange={event => setBudgetDraft(event.target.value)}
+                placeholder="Enter amount"
+              />
+              <label className="budget-repeat-option">
+                <input
+                  type="checkbox"
+                  checked={repeatBudgetMonthly}
+                  onChange={event => setRepeatBudgetMonthly(event.target.checked)}
+                />
+                Repeat this budget every month
+              </label>
+              {budgetFormError && <p className="manage-error" role="alert">{budgetFormError}</p>}
+              {budgetError && <p className="manage-error" role="alert">{budgetError}</p>}
+              <div className="budget-editor-actions">
+                <button className="budget-btn" type="button" onClick={() => { setEditingBudget(false); setBudgetFormError(''); }}>Cancel</button>
+                <button className="add-btn" type="submit" disabled={budgetLoading}>{budgetLoading ? 'Saving…' : 'Save budget'}</button>
+              </div>
+            </form>
+          ) : (
+            <>
+              {budgetError && <p className="manage-error" role="alert">{budgetError}</p>}
+              <button className="budget-btn" onClick={() => setEditingBudget(true)}>
+                {monthlyBudget == null ? 'Set monthly budget' : 'Update budget'}
+              </button>
+              {budgetAmount != null && monthlyBudget?.sourceMonth === month && (
+                <button className="budget-clear" onClick={onClearMonthlyBudget} disabled={budgetLoading}>Remove budget</button>
+              )}
+            </>
+          )}
         </div>
       </section>}
 
@@ -127,18 +225,15 @@ export function DashboardView({
             <div><h3>Top categories</h3><p>By spending this month</p></div>
             <button className="dots"><MoreHorizontal size={20} /></button>
           </div>
-          {[
-            ['Groceries', 482.80, 36],
-            ['Dining', 295.50, 22],
-            ['Transport', 210.24, 16],
-            ['Shopping', 185.90, 14],
-          ].map(([name, value, percentage], index) => (
+          {topCategories.length ? topCategories.map(([name, value], index) => (
             <div className="category" key={name}>
-              <div><span className="cat-color" style={{ background: colors[index] }} />{name}</div>
+              <div><span className="cat-color" style={{ background: colors[index % colors.length] }} />{name}</div>
               <b>${value.toFixed(2)}</b>
-              <div className="progress"><i style={{ width: `${percentage}%`, background: colors[index] }} /></div>
+              <div className="progress">
+                <i style={{ width: `${(value / maxCategorySpend) * 100}%`, background: colors[index % colors.length] }} />
+              </div>
             </div>
-          ))}
+          )) : <p className="empty category-empty">No spending recorded for this month.</p>}
           <button className="view-cats" onClick={onManageCategories}>Manage categories <ChevronRight size={16} /></button>
         </div>}
       </section>

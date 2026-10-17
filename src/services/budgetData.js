@@ -54,6 +54,60 @@ export async function loadBudget(userId) {
   return { transactions: rows.map(transactionFromRow), categories, accounts };
 }
 
+export async function loadMonthlyBudget(userId, month) {
+  const { data: exactBudget, error: exactError } = await supabase
+    .from('monthly_budgets')
+    .select('budget_amount, repeat_monthly, budget_month')
+    .eq('user_id', userId)
+    .eq('budget_month', `${month}-01`)
+    .maybeSingle();
+  if (exactError) throw exactError;
+  if (exactBudget) {
+    return {
+      amount: Number(exactBudget.budget_amount),
+      repeatMonthly: exactBudget.repeat_monthly,
+      sourceMonth: exactBudget.budget_month.slice(0, 7),
+    };
+  }
+
+  const { data: recurringBudget, error: recurringError } = await supabase
+    .from('monthly_budgets')
+    .select('budget_amount, repeat_monthly, budget_month')
+    .eq('user_id', userId)
+    .eq('repeat_monthly', true)
+    .lt('budget_month', `${month}-01`)
+    .order('budget_month', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (recurringError) throw recurringError;
+  return recurringBudget ? {
+    amount: Number(recurringBudget.budget_amount),
+    repeatMonthly: true,
+    sourceMonth: recurringBudget.budget_month.slice(0, 7),
+  } : null;
+}
+
+export async function saveMonthlyBudget(userId, month, amount, repeatMonthly) {
+  const { error } = await supabase
+    .from('monthly_budgets')
+    .upsert({
+      user_id: userId,
+      budget_month: `${month}-01`,
+      budget_amount: amount,
+      repeat_monthly: repeatMonthly,
+    }, { onConflict: 'user_id,budget_month' });
+  if (error) throw error;
+}
+
+export async function deleteMonthlyBudget(userId, month) {
+  const { error } = await supabase
+    .from('monthly_budgets')
+    .delete()
+    .eq('user_id', userId)
+    .eq('budget_month', `${month}-01`);
+  if (error) throw error;
+}
+
 export async function saveTransactionRecord(transaction, userId) {
   const query = transaction.id
     ? supabase.from('transactions').update(transactionToRow(transaction, userId)).eq('id', transaction.id).eq('user_id', userId)
