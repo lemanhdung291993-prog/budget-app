@@ -198,7 +198,7 @@ export default function App() {
       setError('');
       setModal(false);
       setEditingId(null);
-      setForm(createForm(month, categories, accounts));
+      window.location.reload();
     } catch (saveError) {
       setError(`Could not save the transaction: ${saveError.message}`);
     }
