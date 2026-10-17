@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 
 export function AuthScreen({ configured }) {
   const [mode, setMode] = useState('sign-in');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
@@ -17,7 +18,11 @@ export function AuthScreen({ configured }) {
     try {
       const result = mode === 'sign-in'
         ? await supabase.auth.signInWithPassword({ email, password })
-        : await supabase.auth.signUp({ email, password });
+        : await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { full_name: name.trim() } },
+        });
       if (result.error) throw result.error;
       if (mode === 'sign-up' && !result.data.session) {
         setMessage('Check your email to confirm your account, then sign in.');
@@ -36,14 +41,24 @@ export function AuthScreen({ configured }) {
         {!configured ? (
           <>
             <h1>Connect Supabase</h1>
-            <p>Add your project URL and publishable key to a <code>.env.local</code> file in the project root, then restart the dev server.</p>
-            <pre>VITE_SUPABASE_URL=...{'\n'}VITE_SUPABASE_PUBLISHABLE_KEY=...</pre>
+            <p>
+              Supabase settings were not included when this app was built. For a deployed site, add
+              {' '}<code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_PUBLISHABLE_KEY</code> to
+              the hosting provider’s environment variables, then rebuild and redeploy. For local
+              development, put them in <code>.env.local</code> and restart the dev server.
+            </p>
           </>
         ) : (
           <>
             <h1>{mode === 'sign-in' ? 'Welcome back' : 'Create your account'}</h1>
             <p>Sign in to securely access your budget from any device.</p>
             <form onSubmit={submit}>
+              {mode === 'sign-up' && (
+                <label>
+                  Name
+                  <input autoComplete="name" required value={name} onChange={event => setName(event.target.value)} />
+                </label>
+              )}
               <label>Email<input type="email" autoComplete="email" required value={email} onChange={event => setEmail(event.target.value)} /></label>
               <label>Password<input type="password" autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'} minLength={6} required value={password} onChange={event => setPassword(event.target.value)} /></label>
               {error && <p className="auth-error" role="alert">{error}</p>}

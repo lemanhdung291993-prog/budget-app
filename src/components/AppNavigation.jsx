@@ -1,17 +1,16 @@
+import { useRef } from 'react';
 import {
   ArrowUpRight,
   BarChart3,
-  ChevronDown,
-  ChevronRight,
   LayoutDashboard,
-  Plus,
+  Menu,
   Settings,
   Tag,
   Target,
   WalletCards,
 } from 'lucide-react';
 
-const sidebarItems = [
+const navigationItems = [
   [LayoutDashboard, 'Overview'],
   [ArrowUpRight, 'Transactions'],
   [WalletCards, 'Accounts'],
@@ -19,56 +18,37 @@ const sidebarItems = [
   [BarChart3, 'Reports'],
 ];
 
-const mobileItems = [
-  [LayoutDashboard, 'Overview'],
-  [ArrowUpRight, 'Transactions'],
-  [Plus, 'Add'],
-  [Target, 'Budgets'],
-];
+export function AppNavigation({ active, onNavigate, onManage }) {
+  const menuRef = useRef(null);
 
-export function AppNavigation({ active, onNavigate, onManage, onAddTransaction }) {
+  const select = action => {
+    action();
+    if (menuRef.current) menuRef.current.open = false;
+  };
+
   return (
-    <>
-      <aside className="sidebar">
+    <details className="nav-dropdown" ref={menuRef}>
+      <summary aria-label="Open navigation menu" title="Navigation menu">
+        <Menu size={20} />
+      </summary>
+      <div className="nav-dropdown-panel">
         <div className="brand"><span className="brand-mark">p</span><span>Pennywise</span></div>
-        <div className="workspace">
-          <span className="avatar">AJ</span>
-          <div><b>Alex Johnson</b><small>Personal workspace</small></div>
-          <ChevronDown size={15} />
-        </div>
-        <nav>
-          {sidebarItems.map(([Icon, label]) => (
+        <nav aria-label="Main navigation">
+          {navigationItems.map(([Icon, label]) => (
             <button
-              className={active === label ? 'nav-active' : ''}
-              onClick={() => label === 'Accounts' ? onManage('accounts') : onNavigate(label)}
               key={label}
+              className={active === label ? 'nav-active' : ''}
+              onClick={() => select(() => label === 'Accounts' ? onManage('accounts') : onNavigate(label))}
             >
-              <Icon size={19} />{label}
+              <Icon size={18} />{label}
             </button>
           ))}
         </nav>
-        <div className="sidebar-bottom">
-          <button onClick={() => onManage('categories')}><Tag size={18} />Categories</button>
-          <button onClick={() => onManage('accounts')}><WalletCards size={18} />Accounts</button>
-          <button><Settings size={18} />Settings</button>
-          <div className="upgrade">
-            <span>✦</span>
-            <div><b>Unlock more</b><small>Get Pennywise Pro</small></div>
-            <ChevronRight size={15} />
-          </div>
-        </div>
-      </aside>
-      <nav className="mobile-nav">
-        {mobileItems.map(([Icon, label]) => (
-          <button
-            key={label}
-            className={active === label ? 'active' : ''}
-            onClick={() => label === 'Add' ? onAddTransaction() : onNavigate(label)}
-          >
-            <Icon size={19} /><span>{label}</span>
-          </button>
-        ))}
-      </nav>
-    </>
+        <div className="nav-dropdown-divider" />
+        <button onClick={() => select(() => onManage('categories'))}><Tag size={17} />Categories</button>
+        <button onClick={() => select(() => onManage('accounts'))}><WalletCards size={17} />Manage accounts</button>
+        <button onClick={() => select(() => onNavigate('Settings'))}><Settings size={17} />Settings</button>
+      </div>
+    </details>
   );
 }

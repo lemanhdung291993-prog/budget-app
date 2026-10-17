@@ -5,6 +5,7 @@ import {
   Landmark,
   MoreHorizontal,
   Pencil,
+  Plus,
   Search,
   Trash2,
   TrendingUp,
@@ -13,6 +14,7 @@ import { Stat } from '../components/Stat';
 import { colors } from '../utils/constants';
 
 export function DashboardView({
+  transactionsOnly = false,
   expenses,
   income,
   month,
@@ -24,10 +26,11 @@ export function DashboardView({
   search,
   transactions,
   onManageCategories,
+  onAddTransaction,
 }) {
   return (
     <>
-      <section className="balance-card">
+      {!transactionsOnly && <section className="balance-card">
         <div className="balance-info">
           <p>Total balance</p>
           <h2>${(income - expenses + 5400).toLocaleString('en-US', { minimumFractionDigits: 2 })}</h2>
@@ -38,9 +41,9 @@ export function DashboardView({
           <Stat icon={<ArrowUpRight />} label="Expenses" value={expenses} color="rose" />
           <Stat icon={<Landmark />} label="Savings" value={income - expenses} color="purple" />
         </div>
-      </section>
+      </section>}
 
-      <section className="content-grid">
+      {!transactionsOnly && <section className="content-grid">
         <div className="panel spending">
           <div className="panel-head">
             <div><h3>Spending overview</h3><p>{monthLabel}</p></div>
@@ -78,12 +81,15 @@ export function DashboardView({
           <div className="budget-bottom"><span>Remaining</span><b>$952.65</b></div>
           <button className="budget-btn">View budget details <ChevronRight size={16} /></button>
         </div>
-      </section>
+      </section>}
 
-      <section className="lower-grid">
+      <section className={`lower-grid${transactionsOnly ? ' transactions-only' : ''}`}>
         <div className="panel transactions">
           <div className="panel-head">
             <div><h3>Transactions</h3><p>{transactions.length} transaction{transactions.length !== 1 ? 's' : ''} in {monthLabel}</p></div>
+            <button className="add-btn transaction-add-btn" onClick={onAddTransaction}>
+              <Plus size={17} /><span>Add transaction</span>
+            </button>
           </div>
           <div className="search">
             <Search size={17} />
@@ -116,7 +122,7 @@ export function DashboardView({
           </div>
         </div>
 
-        <div className="panel categories">
+        {!transactionsOnly && <div className="panel categories">
           <div className="panel-head">
             <div><h3>Top categories</h3><p>By spending this month</p></div>
             <button className="dots"><MoreHorizontal size={20} /></button>
@@ -134,7 +140,7 @@ export function DashboardView({
             </div>
           ))}
           <button className="view-cats" onClick={onManageCategories}>Manage categories <ChevronRight size={16} /></button>
-        </div>
+        </div>}
       </section>
     </>
   );

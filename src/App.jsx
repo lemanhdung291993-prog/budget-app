@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Bell, LogOut, Plus } from 'lucide-react';
+import { Bell, LogOut } from 'lucide-react';
 import { occurrenceDate } from './utils/constants';
 import { AppNavigation } from './components/AppNavigation';
 import { AuthScreen } from './components/AuthScreen';
@@ -21,6 +21,11 @@ const createForm = (month, categories, accounts) => ({
   recurrence: 'none',
 });
 
+const getCurrentMonth = () => {
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+};
+
 export default function App() {
   const [user, setUser] = useState(null);
   const [sessionReady, setSessionReady] = useState(false);
@@ -33,13 +38,10 @@ export default function App() {
   const [manage, setManage] = useState(null);
   const [active, setActive] = useState('Overview');
   const [filter, setFilter] = useState('');
-  const [month, setMonth] = useState('2026-09');
+  const [month, setMonth] = useState(getCurrentMonth);
   const [categories, setCategories] = useState([]);
   const [accounts, setAccounts] = useState([]);
-  const [form, setForm] = useState(() => ({
-    ...createForm('2026-09', [], []),
-    date: '2026-09-30',
-  }));
+  const [form, setForm] = useState(() => createForm(getCurrentMonth(), [], []));
 
   useEffect(() => {
     if (!supabaseConfigured) {
@@ -114,6 +116,11 @@ export default function App() {
     month: 'long',
     year: 'numeric',
   });
+  const accountName = user?.user_metadata?.full_name?.trim()
+    || user?.email?.split('@')[0]?.replace(/[._-]+/g, ' ').trim()
+    || 'there';
+  const firstName = accountName.split(/\s+/)[0];
+  const displayName = `${firstName[0].toLocaleUpperCase()}${firstName.slice(1)}`;
 
   const saveTransaction = async event => {
     event.preventDefault();
@@ -221,18 +228,14 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <AppNavigation
-        active={active}
-        onNavigate={setActive}
-        onManage={setManage}
-        onAddTransaction={startNewTransaction}
-      />
       <main>
         <header>
-          <div><p className="eyebrow">{monthLabel.toUpperCase()}</p><h1>Good morning, Alex <span>👋</span></h1></div>
+          <div className="header-leading">
+            <AppNavigation active={active} onNavigate={setActive} onManage={setManage} />
+            <div><p className="eyebrow">{monthLabel.toUpperCase()}</p><h1>Good morning, {displayName} <span>👋</span></h1></div>
+          </div>
           <div className="header-actions">
             <button className="icon-btn"><Bell size={19} /><i /></button>
-            <button className="add-btn" onClick={startNewTransaction}><Plus size={19} />Add transaction</button>
             <button className="icon-btn" title={`Sign out ${user.email || ''}`} onClick={signOut}><LogOut size={18} /></button>
           </div>
         </header>
@@ -241,6 +244,7 @@ export default function App() {
           <Reports transactions={transactions} month={month} setMonth={setMonth} monthLabel={monthLabel} />
         ) : (
           <DashboardView
+            transactionsOnly={active === 'Transactions'}
             expenses={expenses}
             income={income}
             month={month}
@@ -252,6 +256,7 @@ export default function App() {
             search={filter}
             transactions={shownTransactions}
             onManageCategories={() => setManage('categories')}
+            onAddTransaction={startNewTransaction}
           />
         )}
       </main>
