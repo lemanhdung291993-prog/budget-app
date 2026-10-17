@@ -26,12 +26,23 @@ const createForm = (month, categories, accounts) => ({
   note: '',
   type: 'expense',
   date: `${month}-01`,
+  time: '',
   recurrence: 'none',
 });
 
 const getCurrentMonth = () => {
   const today = new Date();
   return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+};
+
+const getCurrentDate = () => {
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+};
+
+const getCurrentTime = () => {
+  const today = new Date();
+  return `${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
 };
 
 export default function App() {
@@ -175,6 +186,7 @@ export default function App() {
       account: form.account,
       note: form.note,
       date: form.date,
+      time: form.time,
       recurrence: form.recurrence,
       icon: form.type === 'income' ? '✦' : '●',
     };
@@ -194,7 +206,11 @@ export default function App() {
 
   const startNewTransaction = () => {
     setEditingId(null);
-    setForm(createForm(month, categories, accounts));
+    setForm({
+      ...createForm(month, categories, accounts),
+      date: getCurrentDate(),
+      time: getCurrentTime(),
+    });
     setModal(true);
   };
 
@@ -208,6 +224,7 @@ export default function App() {
       note: transaction.note || '',
       type: transaction.amount > 0 ? 'income' : 'expense',
       date: transaction.recurrenceStartDate || transaction.date,
+      time: transaction.time || '',
       recurrence: transaction.recurrence || 'none',
     });
     setModal(true);

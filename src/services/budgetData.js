@@ -9,6 +9,7 @@ function transactionFromRow(row) {
     account: row.account,
     note: row.note,
     date: row.transaction_date,
+    time: row.transaction_time || '',
     recurrence: row.recurrence,
     icon: row.icon,
   };
@@ -23,6 +24,7 @@ function transactionToRow(transaction, userId) {
     account: transaction.account,
     note: transaction.note || '',
     transaction_date: transaction.date,
+    transaction_time: transaction.time || null,
     recurrence: transaction.recurrence || 'none',
     icon: transaction.icon || '●',
   };
