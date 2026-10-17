@@ -43,6 +43,15 @@ export function DashboardView({
   const topCategories = Object.entries(categoryTotals)
     .sort((first, second) => second[1] - first[1]);
   const maxCategorySpend = topCategories[0]?.[1] || 1;
+  const transactionsByDay = transactions.reduce((groups, transaction) => {
+    const currentDay = groups[groups.length - 1];
+    if (currentDay?.date === transaction.date) {
+      currentDay.transactions.push(transaction);
+    } else {
+      groups.push({ date: transaction.date, transactions: [transaction] });
+    }
+    return groups;
+  }, []);
   const [budgetDraft, setBudgetDraft] = useState('');
   const [repeatBudgetMonthly, setRepeatBudgetMonthly] = useState(false);
   const [editingBudget, setEditingBudget] = useState(false);
@@ -194,28 +203,38 @@ export function DashboardView({
             <input value={search} onChange={event => onSearchChange(event.target.value)} placeholder="Search transactions" />
           </div>
           <div className="tx-list">
-            {transactions.length ? transactions.map(transaction => (
-              <div className="tx" key={`${transaction.occurrenceId}-${transaction.date}`}>
-                <span className="tx-icon">{transaction.icon}</span>
-                <div className="tx-name">
-                  <b>{transaction.title}{transaction.recurrence === 'monthly' && <span className="recurring-tag">Monthly</span>}</b>
-                  <small>{transaction.category} · {transaction.account}</small>
-                </div>
-                <small className="tx-date">{new Date(`${transaction.date}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</small>
-                <strong className={transaction.amount > 0 ? 'positive' : ''}>
-                  {transaction.amount > 0 ? '+' : '−'}${Math.abs(transaction.amount).toFixed(2)}
-                </strong>
-                <div className="tx-actions">
-                  <button title="Edit transaction" onClick={() => onEditTransaction(transaction)}><Pencil size={15} /></button>
-                  <button
-                    title="Delete transaction"
-                    className="delete"
-                    onClick={() => onDeleteTransaction(transaction.occurrenceId, transaction.recurrence === 'monthly')}
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              </div>
+            {transactions.length ? transactionsByDay.map(day => (
+              <section className="tx-day-group" key={day.date}>
+                <h4>{new Date(`${day.date}T12:00:00`).toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}</h4>
+                {day.transactions.map(transaction => (
+                  <div className="tx" key={`${transaction.occurrenceId}-${transaction.date}`}>
+                    <span className="tx-icon">{transaction.icon}</span>
+                    <div className="tx-name">
+                      <b>{transaction.title}{transaction.recurrence === 'monthly' && <span className="recurring-tag">Monthly</span>}</b>
+                      <small>{transaction.category} · {transaction.account}</small>
+                    </div>
+                    <small className="tx-date">{new Date(`${transaction.date}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</small>
+                    <strong className={transaction.amount > 0 ? 'positive' : ''}>
+                      {transaction.amount > 0 ? '+' : '−'}${Math.abs(transaction.amount).toFixed(2)}
+                    </strong>
+                    <div className="tx-actions">
+                      <button title="Edit transaction" onClick={() => onEditTransaction(transaction)}><Pencil size={15} /></button>
+                      <button
+                        title="Delete transaction"
+                        className="delete"
+                        onClick={() => onDeleteTransaction(transaction.occurrenceId, transaction.recurrence === 'monthly')}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </section>
             )) : <p className="empty">No transactions found for this month.</p>}
           </div>
         </div>
