@@ -40,6 +40,19 @@ async function loadNames(table, userId) {
   return data.map(row => row.name);
 }
 
+async function loadCategories(userId) {
+  const { data, error } = await supabase
+    .from('categories')
+    .select('name, icon')
+    .eq('user_id', userId)
+    .order('name');
+  if (error) throw error;
+  return {
+    categories: data.map(row => row.name),
+    categoryIcons: Object.fromEntries(data.map(row => [row.name, row.icon])),
+  };
+}
+
 export async function loadBudget(userId) {
   const { data: rows, error } = await supabase
     .from('transactions')
@@ -48,12 +61,12 @@ export async function loadBudget(userId) {
     .order('transaction_date', { ascending: false });
   if (error) throw error;
 
-  const [categories, accounts] = await Promise.all([
-    loadNames('categories', userId),
+  const [{ categories, categoryIcons }, accounts] = await Promise.all([
+    loadCategories(userId),
     loadNames('accounts', userId),
   ]);
 
-  return { transactions: rows.map(transactionFromRow), categories, accounts };
+  return { transactions: rows.map(transactionFromRow), categories, categoryIcons, accounts };
 }
 
 export async function loadMonthlyBudget(userId, month) {
@@ -138,6 +151,27 @@ export async function saveNames(table, previousNames, nextNames, userId) {
   for (const name of removedNames) {
     const { error } = await supabase
       .from(table)
+      .delete()
+      .eq('user_id', userId)
+      .eq('name', name);
+    if (error) throw error;
+  }
+}
+
+export async function saveCategories(previousNames, nextNames, categoryIcons, userId) {
+  const { error: upsertError } = await supabase
+    .from('categories')
+    .upsert(nextNames.map(name => ({
+      user_id: userId,
+      name,
+      icon: categoryIcons[name] || 'CircleHelp',
+    })), { onConflict: 'user_id,name' });
+  if (upsertError) throw upsertError;
+
+  const removedNames = previousNames.filter(name => !nextNames.includes(name));
+  for (const name of removedNames) {
+    const { error } = await supabase
+      .from('categories')
       .delete()
       .eq('user_id', userId)
       .eq('name', name);

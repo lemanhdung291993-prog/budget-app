@@ -12,6 +12,12 @@ import {
 } from 'lucide-react';
 import { Stat } from '../components/Stat';
 import { colors } from '../utils/constants';
+import { getCategoryIcon } from '../utils/categoryIcons';
+
+const renderCategoryIcon = (category, categoryIcons) => {
+  const Icon = getCategoryIcon(category, categoryIcons);
+  return <Icon aria-hidden="true" size={16} strokeWidth={1.8} />;
+};
 
 export function DashboardView({
   transactionsOnly = false,
@@ -31,6 +37,7 @@ export function DashboardView({
   search,
   transactions,
   categoryTransactions,
+  categoryIcons,
   onManageCategories,
   onAddTransaction,
 }) {
@@ -213,7 +220,7 @@ export function DashboardView({
                 })}</h4>
                 {day.transactions.map(transaction => (
                   <div className="tx" key={`${transaction.occurrenceId}-${transaction.date}`}>
-                    <span className="tx-icon">{transaction.icon}</span>
+                    <span className="tx-icon">{renderCategoryIcon(transaction.category, categoryIcons)}</span>
                     <div className="tx-name">
                       <b>{transaction.title}{transaction.recurrence === 'monthly' && <span className="recurring-tag">Monthly</span>}</b>
                       <small>{transaction.category} · {transaction.account}</small>

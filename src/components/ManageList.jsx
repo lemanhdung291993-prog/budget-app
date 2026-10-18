@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { Plus, Pencil, Trash2, X } from 'lucide-react';
+import { categoryIconOptions, categoryIconsByName, defaultCategoryIcon } from '../utils/categoryIcons';
 
-export function ManageList({ type, items, onClose, onSave }) {
+export function ManageList({ type, items, categoryIcons = {}, onClose, onSave }) {
   const [draft, setDraft] = useState('');
   const [editing, setEditing] = useState(null);
   const [error, setError] = useState('');
   const label = type === 'categories' ? 'Category' : 'Account';
   
-  const save = async next => {
+  const save = async (next, nextCategoryIcons) => {
     setError('');
     try {
-      await onSave(next);
+      await onSave(next, nextCategoryIcons);
       return true;
     } catch (saveError) {
       setError(`Could not save ${label.toLowerCase()}: ${saveError.message}`);
@@ -21,14 +22,33 @@ export function ManageList({ type, items, onClose, onSave }) {
   const add = async () => { 
     const value = draft.trim(); 
     if (value && !items.includes(value)) { 
-      if (await save([...items, value])) setDraft('');
+      const nextCategoryIcons = type === 'categories'
+        ? { ...categoryIcons, [value]: defaultCategoryIcon }
+        : undefined;
+      if (await save([...items, value], nextCategoryIcons)) setDraft('');
     } 
   };
   
   const update = async (index, value) => { 
+    const previousName = items[index];
+    const nextName = value.trim() || previousName;
+    if (items.includes(nextName) && nextName !== previousName) {
+      setEditing(null);
+      return;
+    }
     const next = [...items]; 
-    next[index] = value.trim() || next[index]; 
-    if (await save(next)) setEditing(null); 
+    next[index] = nextName;
+    const nextCategoryIcons = { ...categoryIcons };
+    if (type === 'categories' && previousName !== nextName) {
+      nextCategoryIcons[nextName] = nextCategoryIcons[previousName] || defaultCategoryIcon;
+      delete nextCategoryIcons[previousName];
+    }
+    if (await save(next, type === 'categories' ? nextCategoryIcons : undefined)) setEditing(null); 
+  };
+
+  const updateIcon = async (name, iconName) => {
+    const nextCategoryIcons = { ...categoryIcons, [name]: iconName };
+    await save(items, nextCategoryIcons);
   };
 
   return (
@@ -50,6 +70,24 @@ export function ManageList({ type, items, onClose, onSave }) {
         <div className="manage-items">
           {items.map((item, index) => (
             <div key={`${item}-${index}`}>
+              {type === 'categories' && (
+                <>
+                  {(() => {
+                    const Icon = categoryIconsByName[categoryIcons[item]] || categoryIconsByName[defaultCategoryIcon];
+                    return <Icon className="category-icon-preview" aria-hidden="true" size={17} />;
+                  })()}
+                  <select
+                    className="category-icon-select"
+                    aria-label={`Icon for ${item}`}
+                    value={categoryIcons[item] || defaultCategoryIcon}
+                    onChange={event => updateIcon(item, event.target.value)}
+                  >
+                    {categoryIconOptions.map(([iconName, Icon, label]) => (
+                      <option key={iconName} value={iconName}>{label}</option>
+                    ))}
+                  </select>
+                </>
+              )}
               {editing === index ? (
                 <input 
                   autoFocus 
@@ -64,7 +102,14 @@ export function ManageList({ type, items, onClose, onSave }) {
               <button 
                 title={`Remove ${label.toLowerCase()}`} 
                 className="delete" 
-                onClick={() => save(items.filter((_, i) => i !== index))} 
+                onClick={() => {
+                  const nextCategoryIcons = { ...categoryIcons };
+                  delete nextCategoryIcons[item];
+                  return save(
+                    items.filter((_, i) => i !== index),
+                    type === 'categories' ? nextCategoryIcons : undefined,
+                  );
+                }} 
                 disabled={items.length === 1}
               >
                 <Trash2 size={15}/></button>

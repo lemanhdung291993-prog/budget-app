@@ -13,6 +13,7 @@ import {
   deleteTransactionRecord,
   loadBudget,
   loadMonthlyBudget,
+  saveCategories,
   saveMonthlyBudget,
   saveNames,
   saveTransactionRecord,
@@ -62,6 +63,7 @@ export default function App() {
   const [filter, setFilter] = useState('');
   const [month, setMonth] = useState(getCurrentMonth);
   const [categories, setCategories] = useState([]);
+  const [categoryIcons, setCategoryIcons] = useState({});
   const [accounts, setAccounts] = useState([]);
   const [form, setForm] = useState(() => createForm(getCurrentMonth(), [], []));
 
@@ -93,10 +95,16 @@ export default function App() {
         if (!current) return;
         setTransactions(data.transactions);
         setCategories(data.categories);
+        setCategoryIcons(data.categoryIcons);
         setAccounts(data.accounts);
       })
       .catch(loadError => {
-        if (current) setError(`Could not load your budget: ${loadError.message}`);
+        if (current) {
+          const migrationHint = loadError.message.toLowerCase().includes('icon')
+            ? ' Run supabase/category_icons_migration.sql in the Supabase SQL Editor.'
+            : '';
+          setError(`Could not load your budget: ${loadError.message}.${migrationHint}`);
+        }
       })
       .finally(() => {
         if (current) setLoading(false);
@@ -175,14 +183,14 @@ export default function App() {
 
   const saveTransaction = async event => {
     event.preventDefault();
-    if (!form.title || !form.amount || !form.account || (form.type === 'expense' && !form.category)) return;
+    if (!form.title || !form.amount || !form.account || !form.category) return;
 
     const amount = Math.abs(Number(form.amount)) * (form.type === 'income' ? 1 : -1);
     const transaction = {
       ...(editingId ? { id: editingId } : {}),
       title: form.title,
       amount,
-      category: form.type === 'income' ? 'Income' : form.category,
+      category: form.category,
       account: form.account,
       note: form.note,
       date: form.date,
@@ -245,10 +253,14 @@ export default function App() {
     }
   };
 
-  const saveList = async (type, nextItems) => {
+  const saveList = async (type, nextItems, nextCategoryIcons = categoryIcons) => {
     const previousItems = type === 'categories' ? categories : accounts;
-    const table = type === 'categories' ? 'categories' : 'accounts';
-    await saveNames(table, previousItems, nextItems, user.id);
+    if (type === 'categories') {
+      await saveCategories(previousItems, nextItems, nextCategoryIcons, user.id);
+      setCategoryIcons(nextCategoryIcons);
+    } else {
+      await saveNames('accounts', previousItems, nextItems, user.id);
+    }
     (type === 'categories' ? setCategories : setAccounts)(nextItems);
     setError('');
   };
@@ -340,6 +352,7 @@ export default function App() {
             search={filter}
             transactions={shownTransactions}
             categoryTransactions={monthTransactions}
+            categoryIcons={categoryIcons}
             onManageCategories={() => setManage('categories')}
             onAddTransaction={startNewTransaction}
           />
@@ -360,8 +373,9 @@ export default function App() {
         <ManageList
           type={manage}
           items={manage === 'categories' ? categories : accounts}
+          categoryIcons={categoryIcons}
           onClose={() => setManage(null)}
-          onSave={nextItems => saveList(manage, nextItems)}
+          onSave={(nextItems, nextCategoryIcons) => saveList(manage, nextItems, nextCategoryIcons)}
         />
       )}
     </div>

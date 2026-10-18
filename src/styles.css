@@ -200,6 +200,8 @@ main.auth-screen{box-sizing:border-box;width:100%;max-width:none;min-height:100v
 .tx-day-group .tx{grid-template-columns:36px minmax(0,1fr) auto 88px}
 .tx-day-group .tx-date{display:none}
 .transactions-only .tx-day-group .tx{grid-template-columns:40px minmax(180px,1fr) minmax(100px,130px) 88px}
+.manage-items .category-icon-preview{flex:0 0 17px;color:#6e5cec}
+.manage-items .category-icon-select{width:auto;max-width:112px;height:30px;border:1px solid #e1e4eb;border-radius:6px;background:#fff;color:#596174;font-size:11px;padding:0 5px}
 @media(max-width:720px){
   .tx-day-group h4{font-size:14px;margin-top:10px}
   .tx-day-group .tx{grid-template-columns:32px minmax(0,1fr) auto 80px;gap:6px}

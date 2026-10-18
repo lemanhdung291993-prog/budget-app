@@ -13,6 +13,17 @@ export function TransactionModal({
 }) {
   if (!form) return null;
 
+  const transactionCategories = form.type === 'income'
+    ? [...new Set(['Income', ...categories])]
+    : categories;
+
+  const changeType = type => {
+    const category = type === 'income'
+      ? (form.category !== 'Income' && categories.includes(form.category) ? form.category : 'Income')
+      : (categories.includes(form.category) ? form.category : categories[0] || '');
+    onFormChange({ ...form, type, category });
+  };
+
   return (
     <div className="overlay" onMouseDown={onClose}>
       <form
@@ -25,8 +36,8 @@ export function TransactionModal({
         <h2>{editingId ? 'Edit transaction' : 'Add transaction'}</h2>
         <p>Keep your spending picture up to date.</p>
         <div className="type-toggle">
-          <button type="button" className={form.type === 'expense' ? 'selected expense' : ''} onClick={() => onFormChange({ ...form, type: 'expense' })}>Expense</button>
-          <button type="button" className={form.type === 'income' ? 'selected income' : ''} onClick={() => onFormChange({ ...form, type: 'income' })}>Income</button>
+          <button type="button" className={form.type === 'expense' ? 'selected expense' : ''} onClick={() => changeType('expense')}>Expense</button>
+          <button type="button" className={form.type === 'income' ? 'selected income' : ''} onClick={() => changeType('income')}>Income</button>
         </div>
         <div className="form-field">
           <label htmlFor="transaction-title">Description</label>
@@ -63,16 +74,14 @@ export function TransactionModal({
           <label htmlFor="transaction-time">Time</label>
           <input id="transaction-time" type="time" value={form.time || ''} onChange={event => onFormChange({ ...form, time: event.target.value })} />
         </div>
-        {form.type === 'expense' && (
-          <div className="form-field">
-            <label htmlFor="transaction-category">Category</label>
-            <select id="transaction-category" required value={form.category} onChange={event => onFormChange({ ...form, category: event.target.value })}>
-              <option value="" disabled>{categories.length ? 'Choose a category' : 'Add a category first'}</option>
-              {categories.map(category => <option key={category}>{category}</option>)}
-            </select>
-            <button type="button" className="manage-link" onClick={() => onManage('categories')}>Manage categories</button>
-          </div>
-        )}
+        <div className="form-field">
+          <label htmlFor="transaction-category">Category</label>
+          <select id="transaction-category" required value={form.category} onChange={event => onFormChange({ ...form, category: event.target.value })}>
+            <option value="" disabled>{transactionCategories.length ? 'Choose a category' : 'Add a category first'}</option>
+            {transactionCategories.map(category => <option key={category}>{category}</option>)}
+          </select>
+          <button type="button" className="manage-link" onClick={() => onManage('categories')}>Manage categories</button>
+        </div>
         <div className="form-field">
           <label htmlFor="transaction-recurrence">Repeat</label>
           <select value={form.recurrence} onChange={event => onFormChange({ ...form, recurrence: event.target.value })}>
